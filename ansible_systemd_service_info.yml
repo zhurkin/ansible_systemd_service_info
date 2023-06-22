@@ -191,13 +191,13 @@
       delegate_to: localhost
       run_once: yes
       vars:
-        ansible_systemd_service_info_include_After: true
+        ansible_systemd_service_info_include_After: false
         ansible_systemd_service_info_include_Description: true
         ansible_systemd_service_info_include_UnitFileState: true
         ansible_systemd_service_info_include_ActiveEnterTimestamp: false
         ansible_systemd_service_info_include_ActiveEnterTimestampMonotonic: false
         ansible_systemd_service_info_include_ActiveExitTimestampMonotonic: false
-        ansible_systemd_service_info_include_ActiveState: false
+        ansible_systemd_service_info_include_ActiveState: true
         ansible_systemd_service_info_include_AllowIsolate: false
         ansible_systemd_service_info_include_AmbientCapabilities: false
         ansible_systemd_service_info_include_AssertResult: false
