@@ -1,0 +1,362 @@
+- name: Get systemd service list status
+  hosts: all
+  gather_facts: true
+
+  vars:
+     ansible_systemd_service_info_csv_target_host: ''
+     ansible_systemd_service_info_csv_path_target_host: '~'
+     ansible_systemd_service_info_csv_file_name_on_target_host: '/host_systemd_service_info.csv'
+     ansible_systemd_service_info_csv_path_on_control_node: '~'
+     ansible_systemd_service_info_csv_file_name_on_control_node: '/host_systemd_service_info.csv'
+     ansible_systemd_service_info_csv_create: yes
+     ansible_systemd_service_info_csv_delete_on_control_node: yes
+     ansible_systemd_service_info_csv_delete_target_host: no
+
+  tasks:
+    - name: Delete CSV file on control node
+      file:
+        state: absent
+        path: "{{ ansible_systemd_service_info_csv_path_on_control_node }}{{ ansible_systemd_service_info_csv_file_name_on_control_node }}"
+      delegate_to: localhost
+      when:
+        - ansible_systemd_service_info_csv_delete_on_control_node
+      run_once: true
+
+    - name: Collect facts about system services
+      service_facts:
+      register: services_state
+
+    - name: Get service names
+      set_fact:
+        service_names: "{{ services_state.ansible_facts.services.keys() | list | sort }}"
+
+    - name: Get systemd service list status
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+      register: systemd_status
+      loop: "{{ service_names }}"
+
+    - name: Create CSV file with systemd service information
+      copy:
+        dest: "{{ ansible_systemd_service_info_csv_path_on_control_node }}{{ ansible_systemd_service_info_csv_file_name_on_control_node }}"
+        content: |
+          {% for host in play_hosts | sort %}
+          {% for item in systemd_status.results %}
+          {{ host }},{{ item.name }}
+          {%- if ansible_systemd_service_info_include_ActiveState %},{{ item.status.ActiveState | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_UnitFileState %},{{ item.status.UnitFileState | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_Description %},{{ item.status.Description | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ActiveEnterTimestamp %},{{ item.status.ActiveEnterTimestamp | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ActiveEnterTimestampMonotonic %},{{ item.status.ActiveEnterTimestampMonotonic | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ActiveExitTimestampMonotonic %},{{ item.status.ActiveExitTimestampMonotonic | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_After %},{{ item.status.After | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_AllowIsolate %},{{ item.status.AllowIsolate | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_AmbientCapabilities %},{{ item.status.AmbientCapabilities | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_AssertResult %},{{ item.status.AssertResult | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_AssertTimestamp %},{{ item.status.AssertTimestamp | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_AssertTimestampMonotonic %},{{ item.status.AssertTimestampMonotonic | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_Before %},{{ item.status.Before | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_BlockIOAccounting %},{{ item.status.BlockIOAccounting | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_BlockIOWeight %},{{ item.status.BlockIOWeight | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_BusName %},{{ item.status.BusName | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_CPUAccounting %},{{ item.status.CPUAccounting | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_CPUQuotaPerSecUSec %},{{ item.status.CPUQuotaPerSecUSec | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_CPUSchedulingPolicy %},{{ item.status.CPUSchedulingPolicy | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_CPUSchedulingPriority %},{{ item.status.CPUSchedulingPriority | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_CPUSchedulingResetOnFork %},{{ item.status.CPUSchedulingResetOnFork | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_CPUShares %},{{ item.status.CPUShares | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_CanIsolate %},{{ item.status.CanIsolate | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_CanReload %},{{ item.status.CanReload | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_CanStart %},{{ item.status.CanStart | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_CanStop %},{{ item.status.CanStop | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_CapabilityBoundingSet %},{{ item.status.CapabilityBoundingSet | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ConditionResult %},{{ item.status.ConditionResult | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ConditionTimestamp %},{{ item.status.ConditionTimestamp | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ConditionTimestampMonotonic %},{{ item.status.ConditionTimestampMonotonic | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_Conflicts %},{{ item.status.Conflicts | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ControlGroup %},{{ item.status.ControlGroup | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ControlPID %},{{ item.status.ControlPID | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_DefaultDependencies %},{{ item.status.DefaultDependencies | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_Delegate %},{{ item.status.Delegate | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_DevicePolicy %},{{ item.status.DevicePolicy | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_Documentation %},{{ item.status.Documentation | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ExecMainCode %},{{ item.status.ExecMainCode | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ExecMainExitTimestampMonotonic %},{{ item.status.ExecMainExitTimestampMonotonic | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ExecMainPID %},{{ item.status.ExecMainPID | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ExecMainStartTimestamp %},{{ item.status.ExecMainStartTimestamp | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ExecMainStartTimestampMonotonic %},{{ item.status.ExecMainStartTimestampMonotonic | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ExecMainStatus %},{{ item.status.ExecMainStatus | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ExecStart %},{{ item.status.ExecStart | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_FailureAction %},{{ item.status.FailureAction | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_FileDescriptorStoreMax %},{{ item.status.FileDescriptorStoreMax | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_FragmentPath %},{{ item.status.FragmentPath | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_GuessMainPID %},{{ item.status.GuessMainPID | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_IOScheduling %},{{ item.status.IOScheduling | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_Id %},{{ item.status.Id | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_IgnoreOnIsolate %},{{ item.status.IgnoreOnIsolate | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_IgnoreOnSnapshot %},{{ item.status.IgnoreOnSnapshot | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_IgnoreSIGPIPE %},{{ item.status.IgnoreSIGPIPE | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_InactiveEnterTimestampMonotonic %},{{ item.status.InactiveEnterTimestampMonotonic | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_InactiveExitTimestamp %},{{ item.status.InactiveExitTimestamp | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_InactiveExitTimestampMonotonic %},{{ item.status.InactiveExitTimestampMonotonic | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_JobTimeoutAction %},{{ item.status.JobTimeoutAction | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_JobTimeoutUSec %},{{ item.status.JobTimeoutUSec | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_KillMode %},{{ item.status.KillMode | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_KillSignal %},{{ item.status.KillSignal | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitAS %},{{ item.status.LimitAS | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitCORE %},{{ item.status.LimitCORE | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitCPU %},{{ item.status.LimitCPU | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitDATA %},{{ item.status.LimitDATA | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitFSIZE %},{{ item.status.LimitFSIZE | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitLOCKS %},{{ item.status.LimitLOCKS | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitMEMLOCK %},{{ item.status.LimitMEMLOCK | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitMSGQUEUE %},{{ item.status.LimitMSGQUEUE | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitNICE %},{{ item.status.LimitNICE | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitNOFILE %},{{ item.status.LimitNOFILE | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitNPROC %},{{ item.status.LimitNPROC | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitRSS %},{{ item.status.LimitRSS | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitRTPRIO %},{{ item.status.LimitRTPRIO | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitRTTIME %},{{ item.status.LimitRTTIME | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitSIGPENDING %},{{ item.status.LimitSIGPENDING | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LimitSTACK %},{{ item.status.LimitSTACK | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_LoadState %},{{ item.status.LoadState | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_MainPID %},{{ item.status.MainPID | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_MemoryAccounting %},{{ item.status.MemoryAccounting | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_MemoryCurrent %},{{ item.status.MemoryCurrent | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_MemoryLimit %},{{ item.status.MemoryLimit | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_MountFlags %},{{ item.status.MountFlags | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_Names %},{{ item.status.Names | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_NeedDaemonReload %},{{ item.status.NeedDaemonReload | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_Nice %},{{ item.status.Nice | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_NoNewPrivileges %},{{ item.status.NoNewPrivileges | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_NonBlocking %},{{ item.status.NonBlocking | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_NotifyAccess %},{{ item.status.NotifyAccess | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_OOMScoreAdjust %},{{ item.status.OOMScoreAdjust | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_OnFailureJobMode %},{{ item.status.OnFailureJobMode | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_PIDFile %},{{ item.status.PIDFile | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_PermissionsStartOnly %},{{ item.status.PermissionsStartOnly | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_PrivateDevices %},{{ item.status.PrivateDevices | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_PrivateNetwork %},{{ item.status.PrivateNetwork | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_PrivateTmp %},{{ item.status.PrivateTmp | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ProtectHome %},{{ item.status.ProtectHome | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_ProtectSystem %},{{ item.status.ProtectSystem | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_RefuseManualStart %},{{ item.status.RefuseManualStart | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_RefuseManualStop %},{{ item.status.RefuseManualStop | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_RemainAfterExit %},{{ item.status.RemainAfterExit | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_Requires %},{{ item.status.Requires | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_Restart %},{{ item.status.Restart | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_RestartUSec %},{{ item.status.RestartUSec | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_Result %},{{ item.status.Result | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_RootDirectoryStartOnly %},{{ item.status.RootDirectoryStartOnly | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_RuntimeDirectoryMode %},{{ item.status.RuntimeDirectoryMode | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_SameProcessGroup %},{{ item.status.SameProcessGroup | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_SecureBits %},{{ item.status.SecureBits | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_SendSIGHUP %},{{ item.status.SendSIGHUP | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_SendSIGKILL %},{{ item.status.SendSIGKILL | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_Slice %},{{ item.status.Slice | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_StandardError %},{{ item.status.StandardError | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_StandardInput %},{{ item.status.StandardInput | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_StandardOutput %},{{ item.status.StandardOutput | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_StartLimitAction %},{{ item.status.StartLimitAction | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_StartLimitBurst %},{{ item.status.StartLimitBurst | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_StartLimitInterval %},{{ item.status.StartLimitInterval | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_StartupBlockIOWeight %},{{ item.status.StartupBlockIOWeight | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_StartupCPUShares %},{{ item.status.StartupCPUShares | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_StatusErrno %},{{ item.status.StatusErrno | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_StopWhenUnneeded %},{{ item.status.StopWhenUnneeded | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_SubState %},{{ item.status.SubState | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_SyslogLevelPrefix %},{{ item.status.SyslogLevelPrefix | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_SyslogPriority %},{{ item.status.SyslogPriority | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_SystemCallErrorNumber %},{{ item.status.SystemCallErrorNumber | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_TTYReset %},{{ item.status.TTYReset | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_TTYVHangup %},{{ item.status.TTYVHangup | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_TTYVTDisallocate %},{{ item.status.TTYVTDisallocate | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_TasksAccounting %},{{ item.status.TasksAccounting | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_TasksCurrent %},{{ item.status.TasksCurrent | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_TasksMax %},{{ item.status.TasksMax | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_TimeoutStartUSec %},{{ item.status.TimeoutStartUSec | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_TimeoutStopUSec %},{{ item.status.TimeoutStopUSec | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_TimerSlackNSec %},{{ item.status.TimerSlackNSec | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_Transient %},{{ item.status.Transient | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_Type %},{{ item.status.Type | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_UMask %},{{ item.status.UMask | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_UnitFilePreset %},{{ item.status.UnitFilePreset | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_WantedBy %},{{ item.status.WantedBy | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_WatchdogTimestamp %},{{ item.status.WatchdogTimestamp | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_WatchdogTimestampMonotonic %},{{ item.status.WatchdogTimestampMonotonic | default('N/A') }}{% endif %}
+          {%- if ansible_systemd_service_info_include_WatchdogUSec %},{{ item.status.WatchdogUSec | default('N/A') }}{% endif %}
+
+          {% endfor %}
+          {% endfor %}
+      delegate_to: localhost
+      run_once: yes
+      vars:
+        ansible_systemd_service_info_include_After: true
+        ansible_systemd_service_info_include_Description: true
+        ansible_systemd_service_info_include_UnitFileState: true
+        ansible_systemd_service_info_include_ActiveEnterTimestamp: false
+        ansible_systemd_service_info_include_ActiveEnterTimestampMonotonic: false
+        ansible_systemd_service_info_include_ActiveExitTimestampMonotonic: false
+        ansible_systemd_service_info_include_ActiveState: false
+        ansible_systemd_service_info_include_AllowIsolate: false
+        ansible_systemd_service_info_include_AmbientCapabilities: false
+        ansible_systemd_service_info_include_AssertResult: false
+        ansible_systemd_service_info_include_AssertTimestamp: false
+        ansible_systemd_service_info_include_AssertTimestampMonotonic: false
+        ansible_systemd_service_info_include_Before: false
+        ansible_systemd_service_info_include_BlockIOAccounting: false
+        ansible_systemd_service_info_include_BlockIOWeight: false
+        ansible_systemd_service_info_include_BusName: false
+        ansible_systemd_service_info_include_CPUAccounting: false
+        ansible_systemd_service_info_include_CPUQuotaPerSecUSec: false
+        ansible_systemd_service_info_include_CPUSchedulingPolicy: false
+        ansible_systemd_service_info_include_CPUSchedulingPriority: false
+        ansible_systemd_service_info_include_CPUSchedulingResetOnFork: false
+        ansible_systemd_service_info_include_CPUShares: false
+        ansible_systemd_service_info_include_CanIsolate: false
+        ansible_systemd_service_info_include_CanReload: false
+        ansible_systemd_service_info_include_CanStart: false
+        ansible_systemd_service_info_include_CanStop: false
+        ansible_systemd_service_info_include_CapabilityBoundingSet: false
+        ansible_systemd_service_info_include_ConditionResult: false
+        ansible_systemd_service_info_include_ConditionTimestamp: false
+        ansible_systemd_service_info_include_ConditionTimestampMonotonic: false
+        ansible_systemd_service_info_include_Conflicts: false
+        ansible_systemd_service_info_include_ControlGroup: false
+        ansible_systemd_service_info_include_ControlPID: false
+        ansible_systemd_service_info_include_DefaultDependencies: false
+        ansible_systemd_service_info_include_Delegate: false
+        ansible_systemd_service_info_include_DevicePolicy: false
+        ansible_systemd_service_info_include_Documentation: false
+        ansible_systemd_service_info_include_ExecMainCode: false
+        ansible_systemd_service_info_include_ExecMainExitTimestampMonotonic: false
+        ansible_systemd_service_info_include_ExecMainPID: false
+        ansible_systemd_service_info_include_ExecMainStartTimestamp: false
+        ansible_systemd_service_info_include_ExecMainStartTimestampMonotonic: false
+        ansible_systemd_service_info_include_ExecMainStatus: false
+        ansible_systemd_service_info_include_ExecStart: false
+        ansible_systemd_service_info_include_FailureAction: false
+        ansible_systemd_service_info_include_FileDescriptorStoreMax: false
+        ansible_systemd_service_info_include_FragmentPath: false
+        ansible_systemd_service_info_include_GuessMainPID: false
+        ansible_systemd_service_info_include_IOScheduling: false
+        ansible_systemd_service_info_include_Id: false
+        ansible_systemd_service_info_include_IgnoreOnIsolate: false
+        ansible_systemd_service_info_include_IgnoreOnSnapshot: false
+        ansible_systemd_service_info_include_IgnoreSIGPIPE: false
+        ansible_systemd_service_info_include_InactiveEnterTimestampMonotonic: false
+        ansible_systemd_service_info_include_InactiveExitTimestamp: false
+        ansible_systemd_service_info_include_InactiveExitTimestampMonotonic: false
+        ansible_systemd_service_info_include_JobTimeoutAction: false
+        ansible_systemd_service_info_include_JobTimeoutUSec: false
+        ansible_systemd_service_info_include_KillMode: false
+        ansible_systemd_service_info_include_KillSignal: false
+        ansible_systemd_service_info_include_LimitAS: false
+        ansible_systemd_service_info_include_LimitCORE: false
+        ansible_systemd_service_info_include_LimitCPU: false
+        ansible_systemd_service_info_include_LimitDATA: false
+        ansible_systemd_service_info_include_LimitFSIZE: false
+        ansible_systemd_service_info_include_LimitLOCKS: false
+        ansible_systemd_service_info_include_LimitMEMLOCK: false
+        ansible_systemd_service_info_include_LimitMSGQUEUE: false
+        ansible_systemd_service_info_include_LimitNICE: false
+        ansible_systemd_service_info_include_LimitNOFILE: false
+        ansible_systemd_service_info_include_LimitNPROC: false
+        ansible_systemd_service_info_include_LimitRSS: false
+        ansible_systemd_service_info_include_LimitRTPRIO: false
+        ansible_systemd_service_info_include_LimitRTTIME: false
+        ansible_systemd_service_info_include_LimitSIGPENDING: false
+        ansible_systemd_service_info_include_LimitSTACK: false
+        ansible_systemd_service_info_include_LoadState: false
+        ansible_systemd_service_info_include_MainPID: false
+        ansible_systemd_service_info_include_MemoryAccounting: false
+        ansible_systemd_service_info_include_MemoryCurrent: false
+        ansible_systemd_service_info_include_MemoryLimit: false
+        ansible_systemd_service_info_include_MountFlags: false
+        ansible_systemd_service_info_include_Names: false
+        ansible_systemd_service_info_include_NeedDaemonReload: false
+        ansible_systemd_service_info_include_Nice: false
+        ansible_systemd_service_info_include_NoNewPrivileges: false
+        ansible_systemd_service_info_include_NonBlocking: false
+        ansible_systemd_service_info_include_NotifyAccess: false
+        ansible_systemd_service_info_include_OOMScoreAdjust: false
+        ansible_systemd_service_info_include_OnFailureJobMode: false
+        ansible_systemd_service_info_include_PIDFile: false
+        ansible_systemd_service_info_include_PermissionsStartOnly: false
+        ansible_systemd_service_info_include_PrivateDevices: false
+        ansible_systemd_service_info_include_PrivateNetwork: false
+        ansible_systemd_service_info_include_PrivateTmp: false
+        ansible_systemd_service_info_include_ProtectHome: false
+        ansible_systemd_service_info_include_ProtectSystem: false
+        ansible_systemd_service_info_include_RefuseManualStart: false
+        ansible_systemd_service_info_include_RefuseManualStop: false
+        ansible_systemd_service_info_include_RemainAfterExit: false
+        ansible_systemd_service_info_include_Requires: false
+        ansible_systemd_service_info_include_Restart: false
+        ansible_systemd_service_info_include_RestartUSec: false
+        ansible_systemd_service_info_include_Result: false
+        ansible_systemd_service_info_include_RootDirectoryStartOnly: false
+        ansible_systemd_service_info_include_RuntimeDirectoryMode: false
+        ansible_systemd_service_info_include_SameProcessGroup: false
+        ansible_systemd_service_info_include_SecureBits: false
+        ansible_systemd_service_info_include_SendSIGHUP: false
+        ansible_systemd_service_info_include_SendSIGKILL: false
+        ansible_systemd_service_info_include_Slice: false
+        ansible_systemd_service_info_include_StandardError: false
+        ansible_systemd_service_info_include_StandardInput: false
+        ansible_systemd_service_info_include_StandardOutput: false
+        ansible_systemd_service_info_include_StartLimitAction: false
+        ansible_systemd_service_info_include_StartLimitBurst: false
+        ansible_systemd_service_info_include_StartLimitInterval: false
+        ansible_systemd_service_info_include_StartupBlockIOWeight: false
+        ansible_systemd_service_info_include_StartupCPUShares: false
+        ansible_systemd_service_info_include_StatusErrno: false
+        ansible_systemd_service_info_include_StopWhenUnneeded: false
+        ansible_systemd_service_info_include_SubState: false
+        ansible_systemd_service_info_include_SyslogLevelPrefix: false
+        ansible_systemd_service_info_include_SyslogPriority: false
+        ansible_systemd_service_info_include_SystemCallErrorNumber: false
+        ansible_systemd_service_info_include_TTYReset: false
+        ansible_systemd_service_info_include_TTYVHangup: false
+        ansible_systemd_service_info_include_TTYVTDisallocate: false
+        ansible_systemd_service_info_include_TasksAccounting: false
+        ansible_systemd_service_info_include_TasksCurrent: false
+        ansible_systemd_service_info_include_TasksMax: false
+        ansible_systemd_service_info_include_TimeoutStartUSec: false
+        ansible_systemd_service_info_include_TimeoutStopUSec: false
+        ansible_systemd_service_info_include_TimerSlackNSec: false
+        ansible_systemd_service_info_include_Transient: false
+        ansible_systemd_service_info_include_Type: false
+        ansible_systemd_service_info_include_UMask: false
+        ansible_systemd_service_info_include_UnitFilePreset: false
+        ansible_systemd_service_info_include_WantedBy: false
+        ansible_systemd_service_info_include_WatchdogTimestamp: false
+        ansible_systemd_service_info_include_WatchdogTimestampMonotonic: false
+        ansible_systemd_service_info_include_WatchdogUSec: false
+
+    - name: Copy CSV file to target host
+      copy:
+        src: "{{ ansible_systemd_service_info_csv_path_on_control_node }}{{ ansible_systemd_service_info_csv_file_name_on_control_node }}"
+        dest: "{{ ansible_systemd_service_info_csv_path_target_host }}{{ ansible_systemd_service_info_csv_file_name_on_target_host }}"
+      delegate_to: "{{ ansible_systemd_service_info_csv_target_host }}"
+      when:
+        - ansible_systemd_service_info_csv_create
+      run_once: true
+
+    - name: Delete CSV file on control node
+      file:
+        state: absent
+        path: "{{ ansible_systemd_service_info_csv_path_on_control_node }}{{ ansible_systemd_service_info_csv_file_name_on_control_node }}"
+      delegate_to: localhost
+      when:
+        - ansible_systemd_service_info_csv_delete_on_control_node
+      run_once: true
+
+    - name: Delete CSV file on target host
+      file:
+        state: absent
+        path: "{{ ansible_systemd_service_info_csv_path_target_host }}{{ ansible_systemd_service_info_csv_file_name_on_target_host }}"
+      delegate_to: "{{ ansible_systemd_service_info_csv_target_host }}"
+      when:
+        - ansible_systemd_service_info_csv_delete_target_host
+      run_once: true
